@@ -1,0 +1,868 @@
+{
+  "name": "Subscription Renewal",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gym-renewal",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c0cb2d62-6712-4eee-ab1a-d7d5566e8ae5",
+      "name": "Webhook",
+      "webhookId": "b817a405-d208-424c-9e26-2770d9379ad8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get input (handles both flat JSON and nested \"body\" JSON)\nconst input = $input.first().json;\nconst body = input.body || input;\n\n// 2. Validate\nif (!body.email) throw new Error(\"Email is required\");\n\nconst planType = body.plan_type || 'monthly';\nconst durations = { monthly: 30, quarterly: 90, annual: 365 };\nconst daysToAdd = durations[planType] || 30;\n\n// 3. Calculate Dates\nconst now = new Date();\nconst expiry = new Date(now);\nexpiry.setDate(now.getDate() + daysToAdd);\n\n// 4. Output Clean Data\nreturn [{\n  json: {\n    email: body.email,\n    member_id: body.member_id,\n    plan_type: planType,\n    amount_paid: body.amount_paid || 0,\n    start_date: now.toISOString().split('T')[0],\n    expiry_date: expiry.toISOString().split('T')[0],\n    renewal_date: now.toISOString().split('T')[0],\n    timestamp: now.toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -288
+      ],
+      "id": "0f4f335d-802f-484d-b979-478f9d0b2309",
+      "name": "Validate & Calculate Dates"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appXCW1heCZFvlGSo",
+          "mode": "list",
+          "cachedResultName": "Gym Management System",
+          "cachedResultUrl": "https://airtable.com/appXCW1heCZFvlGSo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleqNi2Sno4ttfpW",
+          "mode": "list",
+          "cachedResultName": "Members",
+          "cachedResultUrl": "https://airtable.com/appXCW1heCZFvlGSo/tbleqNi2Sno4ttfpW"
+        },
+        "filterByFormula": "=",
+        "options": {
+          "fields": []
+        },
+        "sort": {
+          "property": [
+            {
+              "field": "Email"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        16
+      ],
+      "id": "6d1d9f43-7f46-4605-ab46-b11733653bc1",
+      "name": "Find Member",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "XqOGwce4EUzaiU9i",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appXCW1heCZFvlGSo",
+          "mode": "list",
+          "cachedResultName": "Gym Management System",
+          "cachedResultUrl": "https://airtable.com/appXCW1heCZFvlGSo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleqNi2Sno4ttfpW",
+          "mode": "list",
+          "cachedResultName": "Members",
+          "cachedResultUrl": "https://airtable.com/appXCW1heCZFvlGSo/tbleqNi2Sno4ttfpW"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Full Name": "={{ $json.fields['Full Name'] }}",
+            "Phone": "={{ $json.fields.Phone }}",
+            "Email": "={{ $json.fields.Email }}",
+            "Subscription Status": "active",
+            "Subscription Start Date": "={{ $('Validate & Calculate Dates').first().json.start_date }}",
+            "Subscription Expiry Date": "={{ $('Validate & Calculate Dates').first().json.expiry_date }}",
+            "Renewal Count": "={{ ($json.fields['Renewal Count'] || 0) + 1 }}",
+            "Amount Paid": "={{ $('Validate & Calculate Dates').first().json.amount_paid }}",
+            "id": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Subscription Status",
+              "displayName": "Subscription Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "active",
+                  "value": "active"
+                },
+                {
+                  "name": "expired",
+                  "value": "expired"
+                },
+                {
+                  "name": "cancelled",
+                  "value": "cancelled"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Subscription Start Date",
+              "displayName": "Subscription Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Subscription Expiry Date",
+              "displayName": "Subscription Expiry Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Plan Type",
+              "displayName": "Plan Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "monthly",
+                  "value": "monthly"
+                },
+                {
+                  "name": "quarterly",
+                  "value": "quarterly"
+                },
+                {
+                  "name": "annual",
+                  "value": "annual"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Renewal Count",
+              "displayName": "Renewal Count",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Last Renewed",
+              "displayName": "Last Renewed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Amount Paid",
+              "displayName": "Amount Paid",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Renewal Logs (Linked)",
+              "displayName": "Renewal Logs (Linked)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Total Renewals",
+              "displayName": "Total Renewals",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Payment Status",
+              "displayName": "Last Payment Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Renewal Date",
+              "displayName": "Last Renewal Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Days Until Expiry",
+              "displayName": "Days Until Expiry",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Is Expired?",
+              "displayName": "Is Expired?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "AI: Renewal Risk Assessment",
+              "displayName": "AI: Renewal Risk Assessment",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AI: Upsell Opportunity",
+              "displayName": "AI: Upsell Opportunity",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        32
+      ],
+      "id": "9830754e-d716-41de-9040-08dfc975091e",
+      "name": "Update Subscription Record.",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "XqOGwce4EUzaiU9i",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appXCW1heCZFvlGSo",
+          "mode": "list",
+          "cachedResultName": "Gym Management System",
+          "cachedResultUrl": "https://airtable.com/appXCW1heCZFvlGSo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblP8IY4pYanNeYdq",
+          "mode": "list",
+          "cachedResultName": "Renewal Logs",
+          "cachedResultUrl": "https://airtable.com/appXCW1heCZFvlGSo/tblP8IY4pYanNeYdq"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Member": "={{ $json.id }}",
+            "Renewal Date": "={{ $now.format('yyyy-MM-dd') }}\n",
+            "New Status": "active",
+            "Previous Status": "expired",
+            "New Expiry": "={{ $json.fields['Subscription Expiry Date'] }}",
+            "Plan Type": "={{ $('Validate & Calculate Dates').first().json.plan_type }}",
+            "Payment Status": "={{ $('Validate & Calculate Dates').first().json.amount_paid > 0 ? 'completed' : 'pending' }}",
+            "Log ID": 0
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Member",
+              "displayName": "Member",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Renewal Date",
+              "displayName": "Renewal Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Previous Status",
+              "displayName": "Previous Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "active",
+                  "value": "active"
+                },
+                {
+                  "name": "expired",
+                  "value": "expired"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "New Status",
+              "displayName": "New Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "active",
+                  "value": "active"
+                },
+                {
+                  "name": "expired",
+                  "value": "expired"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Previous Expiry",
+              "displayName": "Previous Expiry",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "New Expiry",
+              "displayName": "New Expiry",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Plan Type",
+              "displayName": "Plan Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "monthly",
+                  "value": "monthly"
+                },
+                {
+                  "name": "quarterly",
+                  "value": "quarterly"
+                },
+                {
+                  "name": "annual",
+                  "value": "annual"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Payment Status",
+              "displayName": "Payment Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "completed",
+                  "value": "completed"
+                },
+                {
+                  "name": "pending",
+                  "value": "pending"
+                },
+                {
+                  "name": "failed",
+                  "value": "failed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Member Email",
+              "displayName": "Member Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Member Plan Type",
+              "displayName": "Member Plan Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Renewal Amount Paid",
+              "displayName": "Renewal Amount Paid",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Renewal Gap (Days)",
+              "displayName": "Renewal Gap (Days)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Renewal Status Change?",
+              "displayName": "Renewal Status Change?",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Renewal Success (Formula)",
+              "displayName": "Renewal Success (Formula)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Renewal Note (AI)",
+              "displayName": "Renewal Note (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Renewal Risk Assessment (AI)",
+              "displayName": "Renewal Risk Assessment (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1008,
+        -208
+      ],
+      "id": "d7d65457-eec3-4f8d-bb2c-5c56de6884f9",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "XqOGwce4EUzaiU9i",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3a39b036-a43a-4f42-8fbb-24183eb6b4bc",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "580236b8-e2f5-402c-b536-82a01d166144",
+              "name": "fields['Subscription Start Date']",
+              "value": "={{ $json.fields['Subscription Start Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "fb2a7d98-37e3-4fcb-96ee-5cb1513ed8a8",
+              "name": "fields['Last Renewal Date']",
+              "value": "={{ $json.fields['Last Renewal Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "703fa61b-977e-4142-b5b2-522181f90e12",
+              "name": "fields['Last Renewed']",
+              "value": "={{ $json.fields['Last Renewed'] }}",
+              "type": "string"
+            },
+            {
+              "id": "d47e11b2-1dfa-4f44-81a0-bceb56278580",
+              "name": "fields['Last Payment Status']",
+              "value": "={{ $json.fields['Last Payment Status'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f0e2b37c-bb39-4c64-8bcc-cf506b073fd9",
+              "name": "fields['Subscription Expiry Date']",
+              "value": "={{ $json.fields['Subscription Expiry Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "47369b44-60df-4a4e-b3e5-61f5544ca6ce",
+              "name": "fields['Is Expired?']",
+              "value": "={{ $json.fields['Is Expired?'] }}",
+              "type": "string"
+            },
+            {
+              "id": "57b8322b-a5b4-468d-9d5a-d37342fe407f",
+              "name": "fields.Email",
+              "value": "={{ $json.fields.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "428b1d6f-abc5-4962-9460-a2db8eda7d44",
+              "name": "fields['Total Renewals']",
+              "value": "={{ $json.fields['Total Renewals'] }}",
+              "type": "number"
+            },
+            {
+              "id": "2d850e5a-aad0-4f0a-9383-d597ad69e8b5",
+              "name": "fields['Subscription Start Date']",
+              "value": "={{ $json.fields['Subscription Start Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a4553734-8511-47fb-9e51-2e0255662d91",
+              "name": "fields['Full Name']",
+              "value": "={{ $json.fields['Full Name'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        -240
+      ],
+      "id": "06cbd73f-a985-4d1f-b98e-5ecf2cb617bf",
+      "name": "Save Previous Status."
+    },
+    {
+      "parameters": {
+        "sendTo": "jaiyeobasamueloluwapelumi@gmail.com",
+        "subject": "=Renewal Alert: {{ $json.fields['Member Email'][0] }}",
+        "message": "=<p><strong>Paid:</strong> ₦{{ $('Validate & Calculate Dates').first().json.amount_paid }}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1312,
+        64
+      ],
+      "id": "0208920c-9829-43f5-a0c9-be8584e5f2f1",
+      "name": "Send a message",
+      "webhookId": "2164c527-8477-4666-a2f1-5bb2086bb456",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hemSJiVKKftSz8yY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Calculate Dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Calculate Dates": {
+      "main": [
+        [
+          {
+            "node": "Find Member",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Member": {
+      "main": [
+        [
+          {
+            "node": "Save Previous Status.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Subscription Record.": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Previous Status.": {
+      "main": [
+        [
+          {
+            "node": "Update Subscription Record.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e9c138af-8c43-4dec-a692-43e980691cda",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "be3742841223d56f8c2efbcc7418b223a8c7e0ca323e7f5263b7783d41d69071"
+  },
+  "id": "hyQlhQynbkq9L3fU",
+  "tags": []
+}
