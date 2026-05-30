@@ -1,2 +1,2 @@
-# gym-subscription-renewal
-Automated subscription renewal system with audit logging using n8n and Airtable.
+
+!(https://github.com/heskeyman/gym-subscription-renewal/blob/main/renewal%20workflow.JPG?raw=true)
