@@ -18,7 +18,9 @@ Database:Airtable (Members & Renewal Logs tables)
 Email: Gmail / SMTP
 Logic: JavaScript (ES6+ Date math & data mapping)
 Testing: Postman
-🚀 Key Technical Features
+
+
+Key Technical Features
 1. The "Snapshot" Audit Technique
 Standard database updates are destructive; once an Airtable record is updated, the previous data is overwritten and lost. To maintain a permanent history of subscription changes, this workflow implements a Snapshot Pattern:
 
